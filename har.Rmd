@@ -1,0 +1,251 @@
+---
+title: "Human Activity Recognition"
+author: "Nagesh"
+date: "June 19, 2016"
+output: html_document
+---
+
+## Background
+Using devices such as _Jawbone Up_, _Nike FuelBand_, and _Fitbit_ it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how _much_ of a particular activity they do, but they rarely quantify _how well they do it_. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).          
+ 
+## Data
+The project is well documented at this site - http://groupware.les.inf.puc-rio.br/har and the data for training and test are provided in the assignment page as follows:
+
+* Training - https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+* Test - https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv 
+
+## Pre-processing data
+Let us download the data into appropriate data frames.
+
+```{r dataLoad, cache=TRUE}
+trainUrl <- 'https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv'
+testUrl <- 'https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv '
+
+temp <- tempfile()
+download.file(trainUrl, temp)
+trainData <- read.csv(temp)
+trainData <- na.omit(trainData)
+
+temp <- tempfile()
+download.file(testUrl, temp)
+testData <- read.csv(temp)
+testData <- na.omit(testData)
+```
+
+The data is now loaded into `trainData` and `testData` data frames for training and test data respoectively. Let us take a look into the summary of the `classe` variable as this is the focus of this project
+
+```{r summaryList}
+summary(trainData)
+```
+
+Looking at the summary output, it is clear that some more cleaning of the data set is required. Therefore, we will download again with a filter for n.a. strings as below.
+
+### Data clean-up
+
+```{r dataLoadClean, cache=TRUE}
+trainUrl <- 'https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv'
+testUrl <- 'https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv '
+
+temp <- tempfile()
+download.file(trainUrl, temp)
+trainData <- read.csv(temp, na.strings=c("", "NA", "#DIV/0!"))
+
+temp <- tempfile()
+download.file(testUrl, temp)
+testData <- read.csv(temp, na.strings=c("", "NA", "#DIV/0!"))
+```
+
+Let us check for clean data again.
+```{r cleanDataCheck, cache=TRUE}
+summary(trainData)
+```
+
+We see that, there are a number of columns with `NA` values. To clean them up, we run the following.
+```{r rmNA, cache=TRUE}
+exclCols <- c('kurtosis_roll_belt', 'kurtosis_picth_belt',
+'skewness_roll_belt','skewness_roll_belt.1',
+'max_roll_belt','max_picth_belt',
+'max_yaw_belt','min_roll_belt',
+'min_pitch_belt','min_yaw_belt',
+'amplitude_roll_belt','amplitude_pitch_belt',
+'amplitude_yaw_belt',
+'var_total_accel_belt',
+'avg_roll_belt',
+'stddev_roll_belt',
+'var_roll_belt',
+'avg_pitch_belt',
+'stddev_pitch_belt',
+'var_pitch_belt',
+'avg_yaw_belt',
+'stddev_yaw_belt',
+'var_yaw_belt',
+'var_accel_arm',
+'avg_roll_arm',
+'stddev_roll_arm',
+'var_roll_arm',
+'avg_pitch_arm',
+'stddev_pitch_arm',
+'var_pitch_arm',
+'avg_yaw_arm',
+'var_yaw_arm',
+'stddev_yaw_arm',
+'kurtosis_roll_arm',
+'kurtosis_picth_arm',
+'kurtosis_yaw_arm',
+'skewness_roll_arm',
+'skewness_pitch_arm',
+'skewness_yaw_arm',
+'max_roll_arm',
+'max_picth_arm',
+'max_yaw_arm',
+'min_roll_arm',
+'min_pitch_arm',
+'min_yaw_arm',
+'amplitude_roll_arm',
+'amplitude_pitch_arm',
+'amplitude_yaw_arm',
+'kurtosis_roll_dumbbell',
+'kurtosis_picth_dumbbell',
+'skewness_roll_dumbbell',
+'skewness_pitch_dumbbell',
+'max_roll_dumbbell',
+'max_picth_dumbbell',
+'max_yaw_dumbbell',
+'min_roll_dumbbell',
+'min_pitch_dumbbell',
+'min_yaw_dumbbell',
+'amplitude_roll_dumbbell',
+'amplitude_pitch_dumbbell',
+'amplitude_yaw_dumbbell',
+'var_accel_dumbbell',
+'avg_roll_dumbbell',
+'stddev_roll_dumbbell',
+'var_roll_dumbbell',
+'avg_pitch_dumbbell',
+'stddev_pitch_dumbbell',
+'var_pitch_dumbbell',
+'avg_yaw_dumbbell',
+'stddev_yaw_dumbbell',
+'var_yaw_dumbbell',
+'kurtosis_roll_forearm',
+'kurtosis_picth_forearm',
+'skewness_roll_forearm',
+'skewness_pitch_forearm',
+'max_roll_forearm',
+'max_picth_forearm',
+'max_yaw_forearm',
+'min_roll_forearm',
+'min_pitch_forearm',
+'min_yaw_forearm',
+'amplitude_roll_forearm',
+'amplitude_pitch_forearm',
+'amplitude_yaw_forearm',
+'var_accel_forearm',
+'avg_roll_forearm',
+'stddev_roll_forearm',
+'var_roll_forearm',
+'avg_pitch_forearm',
+'stddev_pitch_forearm',
+'var_pitch_forearm',
+'avg_yaw_forearm',
+'stddev_yaw_forearm',
+'var_yaw_forearm',
+'kurtosis_yaw_belt',
+'skewness_yaw_forearm',
+'skewness_yaw_forearm',
+'kurtosis_yaw_dumbbell',
+'skewness_yaw_belt',
+'skewness_yaw_dumbbell',
+'kurtosis_yaw_forearm',
+'kurtosis_yaw_belt')
+
+library(dplyr)
+trData <- select(trainData, -one_of(exclCols))
+```
+
+Let us remove the columns that have near zero variance. This will ensure better model accuracy. Also, remove descriptive fields such as timestamp, etc. Finally, columns where the number of NA are more than 40% are also removed. The removal of columns from the above step for NA should cover most; but, nevertheless, let's apply this extra clean-up step.
+
+```{r nzVar, cache=TRUE}
+nzVarCol <- nearZeroVar(trData)
+trData <- trData[, -nzVarCol]
+
+cntlength <- sapply(trData, function(x) {
+    sum(!(is.na(x) | x == ""))
+})
+nullCol <- names(cntlength[cntlength < 0.6 * length(trData$classe)])
+descCol <- c("X", "user_name", "raw_timestamp_part_1", "raw_timestamp_part_2", 
+    "cvtd_timestamp", "new_window", "num_window")
+allExclCols <- c(descCol, nullCol)
+
+trData <- trData[, !names(trData) %in% allExclCols]
+
+summary(trData)
+```
+
+### Classification of activities
+
+```{r summaryClass}
+summary(trData$classe)
+```
+
+To understand the summary of the `classe` variable better, let us get the description from the website ( http://groupware.les.inf.puc-rio.br/har ). Six young health participants were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps Curl in five different fashions:         
+
+* exactly according to the specification (Class A), 
+* throwing the elbows to the front (Class B), 
+* lifting the dumbbell only halfway (Class C), 
+* lowering the dumbbell only halfway (Class D),
+* throwing the hips to the front (Class E).
+
+Thus, it is clear that, a given set of repitition of dumb bell work-outs could classify into one of the five different fashion as mentioned above.
+
+## Model training
+As a first step to train the model, let us start with the partitioning of the training data set.
+
+### Data partitioning
+Let us start with partitioning our training data set for model training; where, 70% of the training data (as created above) will be used for training and the remaining for validation.
+
+```{r trainPartitions, cache=TRUE}
+library(caret)
+trainset <- createDataPartition(trData$classe, p = 0.7, list = FALSE)
+trainingData <- trData[trainset, ]
+validationData <- trData[-trainset, ]
+```
+
+Thus, we have `r nrow(trainingData)` rows in training set and `r nrow(validationData)` rows in validation set.
+
+### Model
+As mentioned earlier, this is a classifcation problem and therefore, the best way to model this is to use Random Forest. This is because, we will get a model that builds decision trees to output a class value; in this case, the `classe` variable.
+
+```{r modelTrain, cache=TRUE}
+library(caret)
+rfModel <- train(classe ~ .,data=trainingData,method='rf')
+
+```
+
+### Model validation
+Let us test the accuracy of our model.
+
+#### Training set
+We run predictions on our training set and print the confusion matrix to check the model accuracy.
+```{r modeAccuracyTrain, cache=TRUE}
+pTrain <- predict(rfModel,trainingData)
+print(confusionMatrix(pTrain,trainingData$classe))
+```
+
+Obviously, the accuracy of our model on the training data is high. So, let us check with the validation data.
+
+#### Validation data
+```{r modelAccuracyVal, cache=TRUE}
+pValid <- predict(rfModel,validationData)
+print(confusionMatrix(pValid,validationData$classe))
+```
+
+#### Test data
+```{r modelAccuracyTest, cache=TRUE}
+exclCols <- append(exclCols,c('problem_id'))
+teData <- select(testData, -one_of(exclCols))
+teData <- teData[,-nzVarCol]
+teData$classe <- NA
+
+summary(teData)
+```
