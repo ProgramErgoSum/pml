@@ -216,9 +216,12 @@ Thus, we have `r nrow(trainingData)` rows in training set and `r nrow(validation
 ### Model
 As mentioned earlier, this is a classifcation problem and therefore, the best way to model this is to use Random Forest. This is because, we will get a model that builds decision trees to output a class value; in this case, the `classe` variable.
 
+**NOTE: This is the reason for the slightly delayed submission. I tried and tried; then, gave up. Eventually, I tried the randomForest option as I have used here http://stackoverflow.com/questions/24857772/caret-train-rf-model-inexplicably-long-execution 
+**
+
 ```{r modelTrain, cache=TRUE}
-library(caret)
-rfModel <- train(classe ~ .,data=trainingData,method='rf')
+library(randomForest)
+rfModel <- randomForest(classe ~ .,data=trainingData,importance = TRUE, ntrees = 10)
 
 ```
 
@@ -247,5 +250,6 @@ teData <- select(testData, -one_of(exclCols))
 teData <- teData[,-nzVarCol]
 teData$classe <- NA
 
-summary(teData)
+pTest <- predict(rfModel,teData)
+pTest
 ```
