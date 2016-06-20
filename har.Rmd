@@ -178,8 +178,6 @@ descCol <- c("X", "user_name", "raw_timestamp_part_1", "raw_timestamp_part_2",
 allExclCols <- c(descCol, nullCol)
 
 trData <- trData[, !names(trData) %in% allExclCols]
-
-summary(trData)
 ```
 
 ### Classification of activities
@@ -243,13 +241,29 @@ pValid <- predict(rfModel,validationData)
 print(confusionMatrix(pValid,validationData$classe))
 ```
 
+The following chunk does not render in knitr but runs sucessfully as a chunk as shown below.
+
 #### Test data
 ```{r modelAccuracyTest, cache=TRUE}
-exclCols <- append(exclCols,c('problem_id'))
-teData <- select(testData, -one_of(exclCols))
-teData <- teData[,-nzVarCol]
-teData$classe <- NA
+#exclCols <- append(exclCols,c('problem_id'))
+#teData <- select(testData, -one_of(exclCols))
+#teData <- teData[,-nzVarCol]
+#teData$classe <- NA
 
-pTest <- predict(rfModel,teData)
-pTest
+#pTest <- predict(rfModel,teData)
+#pTest
 ```
+
+
+> 
+> # Chunk 12: modelAccuracyTest
+> exclCols <- append(exclCols,c('problem_id'))
+> teData <- select(testData, -one_of(exclCols))
+> teData <- teData[,-nzVarCol]
+> teData$classe <- NA
+> 
+> pTest <- predict(rfModel,teData)
+> pTest
+>  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 
+>  B  A  B  A  A  E  D  B  A  A  B  C  B  A  E  E  A  B  B  B 
+> Levels: A B C D E
